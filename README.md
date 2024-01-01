@@ -8,8 +8,9 @@ The code mainly comes from official [source code](https://github.com/SUN-1024/DA
 ## Project Structure
 ```
 ├── datasets: Load datasets
-    ├── cityscapes.py: Customize reading CityScapes dataset
+    ├── cityscapes.py: Customize reading cityscapes dataset
     ├── coco.py: Customize reading COCO dataset
+    ├── synapse.py: Customize reading synapse dataset
     ├── voc.py: Customize reading PascalVOC dataset
 ├── models: DA-TransUNet Model
     ├── block.py: Build the necessary branches of the model
