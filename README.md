@@ -10,7 +10,10 @@ The code mainly comes from official [source code](https://github.com/SUN-1024/DA
 ├── datasets: Load datasets
     ├── cityscapes.py: Customize reading cityscapes dataset
     ├── coco.py: Customize reading COCO dataset
+    ├── custom_transforms.py: Customize your image-data aug approaches
+    ├── mypath.py: Customize your data path
     ├── synapse.py: Customize reading synapse dataset
+    ├── utils.py: Build some encode-decode-map or colors functions
     ├── voc.py: Customize reading PascalVOC dataset
 ├── models: DA-TransUNet Model
     ├── block.py: Build the necessary branches of the model
