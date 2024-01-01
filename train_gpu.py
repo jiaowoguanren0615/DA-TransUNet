@@ -13,7 +13,7 @@ from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DistributedSampler, RandomSampler
-from torch import distributed as dist
+# from torch import distributed as dist
 from timm.models import create_model
 from timm.utils import NativeScaler
 from models import DA_Transformer
@@ -23,6 +23,7 @@ from utils.augmentations import get_train_augmentation, get_val_augmentation
 from utils.losses import get_loss
 from utils.schedulers import get_scheduler, create_lr_scheduler
 from utils.optimizers import get_optimizer
+from utils import distributed_utils as dist
 import utils
 from utils.utils import fix_seeds, setup_cudnn, cleanup_ddp, setup_ddp
 from engine import train_one_epoch, evaluate
@@ -178,11 +179,12 @@ def main(args):
         val_info = str(confmat)
         print(val_info)
 
-        with open(results_file, "a") as f:
-            train_info = f"[epoch: {epoch}]\n" \
-                         f"train_loss: {mean_loss:.4f}\n" \
-                         f"lr: {lr:.6f}\n"
-            f.write(train_info + val_info + "\n\n")
+        if dist.is_main_process():
+            with open(results_file, "a") as f:
+                train_info = f"[epoch: {epoch}]\n" \
+                             f"train_loss: {mean_loss:.4f}\n" \
+                             f"lr: {lr:.6f}\n"
+                f.write(train_info + val_info + "\n\n")
 
         with open(results_file, 'r') as file:
             text = file.read()
