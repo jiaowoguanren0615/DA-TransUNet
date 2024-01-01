@@ -18,8 +18,8 @@ The code mainly comes from official [source code](https://github.com/SUN-1024/DA
 ├── utils:
     ├── augmentations.py: Define transforms data enhancement methods
     ├── distributed_utils.py: Record various indicator information and output and distributed environment
-    ├── losses.py: Define loss functions, focal_loss, ce_loss, Dice, etc
-    ├── metrics.py: Compute iou, f1, pixel_accuracy.
+    ├── losses.py: Define loss functions. eg: Focal_loss, CE_loss, Dice, etc
+    ├── metrics.py: Compute iou, f1-score, pixel_accuracy
     ├── optimizer.py: Get a optimizer (AdamW or SGD)
     ├── schedulers.py: Define lr_schedulers (PolyLR, WarmupLR, WarmupPolyLR, WarmupExpLR, WarmupCosineLR, etc)
     ├── utils.py: Define some support functions(fix random seed, get model size, get time, throughput, etc)
