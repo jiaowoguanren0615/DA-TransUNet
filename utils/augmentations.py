@@ -343,14 +343,14 @@ def get_train_augmentation(size: Union[int, Tuple[int], List[int]], seg_fill: in
         # RandomGaussianBlur((3, 3), p=0.5),
         # RandomGrayscale(p=0.5),
         # RandomRotation(degrees=10, p=0.3, seg_fill=seg_fill),
-        RandomResizedCrop(size, scale=(0.5, 2.0), seg_fill=seg_fill),
+        RandomResizedCrop([size, size], scale=(0.5, 2.0), seg_fill=seg_fill),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
 
 
 def get_val_augmentation(size: Union[int, Tuple[int], List[int]]):
     return Compose([
-        Resize(size),
+        Resize([size, size]),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
 

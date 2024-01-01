@@ -10,9 +10,9 @@ import custom_transforms as tr
 class CityscapesSegmentation(data.Dataset):
     NUM_CLASSES = 19
 
-    def __init__(self, args, root=Path.db_root_dir('cityscapes'), split="train"):
+    def __init__(self, args, split="train"):
 
-        self.root = root
+        self.root = args.data_root
         self.split = split
         self.args = args
         self.files = {}
@@ -81,7 +81,7 @@ class CityscapesSegmentation(data.Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
-            tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
+            tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.image_size, fill=255),
             tr.RandomGaussianBlur(),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
@@ -91,7 +91,7 @@ class CityscapesSegmentation(data.Dataset):
     def transform_val(self, sample):
 
         composed_transforms = transforms.Compose([
-            tr.FixScaleCrop(crop_size=self.args.crop_size),
+            tr.FixScaleCrop(crop_size=self.args.image_size),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
 
@@ -100,7 +100,7 @@ class CityscapesSegmentation(data.Dataset):
     def transform_ts(self, sample):
 
         composed_transforms = transforms.Compose([
-            tr.FixedResize(size=self.args.crop_size),
+            tr.FixedResize(size=self.args.image_size),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
 
