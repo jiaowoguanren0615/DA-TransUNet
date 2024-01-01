@@ -12,12 +12,12 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 from torch.cuda.amp import GradScaler, autocast
-from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DistributedSampler, RandomSampler
 from torch import distributed as dist
 from timm.models import create_model
 from timm.utils import NativeScaler
-from models import *
+from models import DA_Transformer
+from models.bulid_model import CONFIGS as CONFIGS_ViT_seg
 from datasets import *
 from utils.augmentations import get_train_augmentation, get_val_augmentation
 from utils.losses import get_loss
@@ -35,26 +35,27 @@ def get_argparser():
     parser.add_argument("--data_root", type=str, default='./CityScapesDataset', help="path to Dataset")
     parser.add_argument("--image_size", type=int, default=512, help="input size")
     parser.add_argument("--base_size", type=int, default=512, help="base size")
-    parser.add_argument("--ignore_label", type=int, default=255, help="path to Dataset")
-    parser.add_argument("--dataset", type=str, default='cityscapes', choices=['cityscapes', 'pascal', 'coco', 'synapse'],
-                        help='Name of dataset')
-    parser.add_argument("--num_classes", type=int, default=19, help="num classes (default: None)")
-    parser.add_argument("--pin_mem", type=bool, default=False, help="Dataloader ping_memory")
-    parser.add_argument("--batch_size", type=int, default=4,
-                        help='batch size (default: 4)')  # consume approximately 3G GPU-Memory
+    parser.add_argument("--ignore_label", type=int, default=255, help="the dataset ignore_label")
+    parser.add_argument("--dataset", type=str, default='cityscapes',
+                        choices=['cityscapes', 'pascal', 'coco', 'synapse'], help='Name of dataset')
+    parser.add_argument("--num_classes", type=int, default=19, help="num classes (default: 19 for cityscapes)")
+    parser.add_argument("--pin_mem", type=bool, default=True, help="Dataloader ping_memory")
+    parser.add_argument("--batch_size", type=int, default=4, help='batch size (default: 4)')
     parser.add_argument("--val_batch_size", type=int, default=2, help='batch size for validation (default: 2)')
 
-    # SegNext Options
-    parser.add_argument("--model", type=str, default='SegNeXt_T',
-                        choices=['SegNeXt_T', 'SegNeXt_S', 'SegNeXt_B', 'SegNeXt_L'], help='model type')
+    # DA-TransUNet Options
+    parser.add_argument("--model", type=str, default='R50-ViT-B_16',
+                        choices=['ViT-B_16', 'ViT-B_32', 'ViT-L_16', 'ViT-L_32', 'ViT-H_14',
+                                 'R50-ViT-B_16', 'R50-ViT-L_16', 'testing'], help='model type')
+    parser.add_argument('--vit_patches_size', type=int, default=16, help='vit_patches_size, default is 16')
+    parser.add_argument('--n_skip', type=int, default=3, help='using number of skip-connect, default is num')
 
     # Train Options
-    parser.add_argument("--amp", type=bool, default=False, help='auto mixture precision')
+    parser.add_argument("--amp", type=bool, default=True, help='auto mixture precision')
     parser.add_argument("--epochs", type=int, default=2, help='total training epochs')
     parser.add_argument("--device", type=str, default='cuda:0', help='device (cuda:0 or cpu)')
-    parser.add_argument("--num_workers", type=int, default=0,
-                        help='num_workers, set it equal 0 when run programs in win platform')
-    parser.add_argument("--DDP", type=bool, default=False)
+    parser.add_argument("--num_workers", type=int, default=8, help='num_workers, set it equal 0 when run programs in windows platform')
+    # parser.add_argument("--DDP", type=bool, default=False)
     parser.add_argument("--train_print_freq", type=int, default=100)
     parser.add_argument("--val_print_freq", type=int, default=50)
 
@@ -82,7 +83,7 @@ def get_argparser():
                         help="restore from checkpoint")
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--save_dir", type=str, default='./', help='SummaryWriter save dir')
-    parser.add_argument("--gpu_id", type=str, default='0', help="GPU ID")
+    # parser.add_argument("--gpu_id", type=str, default='0', help="GPU ID")
 
     # training parameters
     parser.add_argument('--world_size', default=1, type=int, help='number of distributed processes')
@@ -111,15 +112,20 @@ def main(args):
     train_set = CityscapesSegmentation(args, 'train')
     valid_set = CityscapesSegmentation(args, 'val')
 
-    model = create_model(
-        args.model,
-        num_classes=args.nb_classes,
-        args=args
-    )
+    config_vit = CONFIGS_ViT_seg[args.model]
+    config_vit.n_classes = args.num_classes
+    config_vit.n_skip = args.n_skip
+    if args.vit_name.find('R50') != -1:
+        config_vit.patches.grid = (
+        int(args.image_size / args.vit_patches_size), int(args.image_size / args.vit_patches_size))
+
+    model = DA_Transformer(config_vit, img_size=args.image_size, num_classes=config_vit.n_classes)
+
+    model = model.to(device)
 
     if args.distributed:
         sampler = DistributedSampler(train_set, dist.get_world_size(), dist.get_rank(), shuffle=True)
-        model = DDP(model, device_ids=[args.gpu_id])
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
     else:
         sampler = RandomSampler(train_set)
 
@@ -158,7 +164,6 @@ def main(args):
 
         print(f'The Best MeanIou is {best_mIoU:.4f}')
 
-    model = model.to(device)
     for epoch in range(args.epochs):
 
         if args.distributed:

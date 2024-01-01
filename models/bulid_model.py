@@ -475,13 +475,13 @@ CONFIGS = {
     'testing': configs.get_testing(),
 }
 
-if __name__ == '__main__':
-    from torchinfo import summary
-
-    config_vit = CONFIGS['R50-ViT-B_16']
-    config_vit.n_classes = 19
-    config_vit.n_skip = 3
-    if 'R50-ViT-B_16'.find('R50') != -1:
-        config_vit.patches.grid = (int(224 / 16), int(224 / 16))
-    net = DA_Transformer(config_vit, img_size=224, num_classes=config_vit.n_classes)
-    summary(net, input_size=(1, 3, 224, 224))
+# if __name__ == '__main__':
+#     from torchinfo import summary
+#
+#     config_vit = CONFIGS['R50-ViT-B_16']
+#     config_vit.n_classes = 19
+#     config_vit.n_skip = 3
+#     if 'R50-ViT-B_16'.find('R50') != -1:
+#         config_vit.patches.grid = (int(224 / 16), int(224 / 16))
+#     net = DA_Transformer(config_vit, img_size=224, num_classes=config_vit.n_classes)
+#     summary(net, input_size=(1, 3, 224, 224))
